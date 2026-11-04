@@ -44,6 +44,77 @@ export async function getProjects(req, res, next) {
 }
 
 export async function getProject(req, res, next) {
+    try {
+        const projectId = Number(req.params.id);
+        const userId = req.user.id;
+
+        // Validate the project ID
+        if (!Number.isSafeInteger(projectId) || projectId <= 0) {
+            return res.status(400).json({
+                message: 'Invalid project ID.',
+            });
+        }
+
+        const project = await prisma.project.findFirst({
+            where: {
+                id: projectId,
+                OR: [
+                    { ownerId: userId },
+                    {
+                        members: {
+                            some: {
+                                userId,
+                            },
+                        },
+                    },
+                ],
+            },
+            include: {
+                owner: {
+                    select: {
+                        id: true,
+                        username: true,
+                    },
+                },
+                members: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true,
+                                email: true,
+                            },
+                        },
+                    },
+                },
+                items: {
+                    include: {
+                        assignee: {
+                            select: {
+                                id: true,
+                                username: true,
+                            },
+                        },
+                    },
+                    orderBy: {
+                        createdAt: 'desc',
+                    },
+                },
+            },
+        });
+
+        if (!project) {
+            return res.status(404).json({
+                message: 'Project not found.',
+            });
+        }
+
+        return res.status(200).json({
+            project,
+        });
+    } catch (error) {
+        next(error);
+    }
 }
 
 export async function createProject(req, res, next) {

@@ -32,7 +32,7 @@ app.use(passport.session());
 // API routes
 app.use("/api", apiRoutes);
 app.use("/auth", authRoutes);
-app.use("/projects", projectRoutes);
+app.use("/project", projectRoutes);
 
 // Error handling
 app.use(errorHandler);
