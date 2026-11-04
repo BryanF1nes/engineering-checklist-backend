@@ -1,3 +1,4 @@
+
 import request from 'supertest';
 import { createHash } from 'node:crypto';
 
@@ -22,15 +23,22 @@ const users = [
         email: `invite-outsider-${Date.now()}@example.com`,
         password,
     },
+    {
+        username: 'invite-second-outsider',
+        email: `invite-second-outsider-${Date.now()}@example.com`,
+        password,
+    },
 ];
 
 let ownerAgent;
 let memberAgent;
 let outsiderAgent;
+let secondOutsiderAgent;
 
 let ownerId;
 let memberId;
 let outsiderId;
+let secondOutsiderId;
 let projectId;
 
 async function createAuthenticatedUser(user) {
@@ -58,12 +66,31 @@ function createInvitation(role = 'CONTRIBUTOR') {
         .send({ role });
 }
 
+async function createProject(name = 'Invitation Acceptance Test Project') {
+    const response = await ownerAgent
+        .post('/project')
+        .send({
+            name,
+            stage: 'TEN',
+        })
+        .expect(201);
+
+    return response.body.project.id;
+}
+
+function createInvitationForProject(projectId, role = 'CONTRIBUTOR') {
+    return ownerAgent
+        .post(`/project/${projectId}/invitations`)
+        .send({ role });
+}
+
 describe('Project invitation routes', () => {
     beforeAll(async () => {
         // Create authenticated users.
         ownerAgent = await createAuthenticatedUser(users[0]);
         memberAgent = await createAuthenticatedUser(users[1]);
         outsiderAgent = await createAuthenticatedUser(users[2]);
+        secondOutsiderAgent = await createAuthenticatedUser(users[3]);
 
         // Retrieve user IDs.
         const owner = await prisma.user.findUnique({
@@ -81,9 +108,15 @@ describe('Project invitation routes', () => {
             select: { id: true },
         });
 
+        const secondOutsider = await prisma.user.findUnique({
+            where: { email: users[3].email },
+            select: { id: true },
+        });
+
         ownerId = owner.id;
         memberId = member.id;
         outsiderId = outsider.id;
+        secondOutsiderId = secondOutsider.id;
 
         // Create a project owned by the first user.
         const response = await ownerAgent
@@ -434,6 +467,226 @@ describe('Project invitation routes', () => {
                 .delete('/project/invalid/invitations/1');
 
             expect(response.status).toBe(400);
+        });
+    });
+
+    describe('POST /invitations/:token/accept', () => {
+        it('should allow an unrelated user to accept a CONTRIBUTOR invitation', async () => {
+            const projectId = await createProject();
+
+            const created = await createInvitationForProject(
+                projectId,
+                'CONTRIBUTOR'
+            ).expect(201);
+
+            const token = created.body.invitation.token;
+
+            const response = await outsiderAgent
+                .post(`/invitations/${token}/accept`)
+                .expect(201);
+
+            expect(response.body.membership).toMatchObject({
+                projectId,
+                userId: outsiderId,
+                role: 'CONTRIBUTOR',
+            });
+
+            expect(response.body.project).toMatchObject({
+                id: projectId,
+                name: 'Invitation Acceptance Test Project',
+            });
+
+            const membership = await prisma.projectMember.findUnique({
+                where: {
+                    projectId_userId: {
+                        projectId,
+                        userId: outsiderId,
+                    },
+                },
+            });
+
+            expect(membership).not.toBeNull();
+            expect(membership.role).toBe('CONTRIBUTOR');
+        });
+
+        it('should allow an unrelated user to accept a VIEWER invitation', async () => {
+            const projectId = await createProject('Viewer Invitation Project');
+
+            const created = await createInvitationForProject(
+                projectId,
+                'VIEWER'
+            ).expect(201);
+
+            const token = created.body.invitation.token;
+
+            const response = await outsiderAgent
+                .post(`/invitations/${token}/accept`)
+                .expect(201);
+
+            expect(response.body.membership).toMatchObject({
+                projectId,
+                userId: outsiderId,
+                role: 'VIEWER',
+            });
+        });
+
+        it('should reject an invalid invitation token', async () => {
+            await outsiderAgent
+                .post('/invitations/not-a-valid-token/accept')
+                .expect(404);
+        });
+
+        it('should reject an expired invitation', async () => {
+            const projectId = await createProject('Expired Invitation Project');
+
+            const created = await createInvitationForProject(projectId)
+                .expect(201);
+
+            const token = created.body.invitation.token;
+
+            const tokenHash = createHash('sha256')
+                .update(token)
+                .digest('hex');
+
+            await prisma.projectInvite.update({
+                where: { tokenHash },
+                data: {
+                    expiresAt: new Date(Date.now() - 1000),
+                },
+            });
+
+            await outsiderAgent
+                .post(`/invitations/${token}/accept`)
+                .expect(410);
+        });
+
+        it('should reject a revoked invitation', async () => {
+            const projectId = await createProject('Revoked Invitation Project');
+
+            const created = await createInvitationForProject(projectId)
+                .expect(201);
+
+            const token = created.body.invitation.token;
+
+            const tokenHash = createHash('sha256')
+                .update(token)
+                .digest('hex');
+
+            await prisma.projectInvite.update({
+                where: { tokenHash },
+                data: {
+                    revokedAt: new Date(),
+                },
+            });
+
+            await outsiderAgent
+                .post(`/invitations/${token}/accept`)
+                .expect(410);
+        });
+
+        it('should reject the project owner accepting their own invitation', async () => {
+            const projectId = await createProject('Owner Invitation Project');
+
+            const created = await createInvitationForProject(projectId)
+                .expect(201);
+
+            const token = created.body.invitation.token;
+
+            await ownerAgent
+                .post(`/invitations/${token}/accept`)
+                .expect(409);
+        });
+
+        it('should reject a user who is already a project member', async () => {
+            const projectId = await createProject('Existing Member Invitation Project');
+
+            await prisma.projectMember.create({
+                data: {
+                    projectId,
+                    userId: memberId,
+                    role: 'CONTRIBUTOR',
+                },
+            });
+
+            const created = await createInvitationForProject(projectId)
+                .expect(201);
+
+            const token = created.body.invitation.token;
+
+            await memberAgent
+                .post(`/invitations/${token}/accept`)
+                .expect(409);
+        });
+
+        it('should reject an unauthenticated request', async () => {
+            const projectId = await createProject('Unauthenticated Invitation Project');
+
+            const created = await createInvitationForProject(projectId)
+                .expect(201);
+
+            const token = created.body.invitation.token;
+
+            await request(app)
+                .post(`/invitations/${token}/accept`)
+                .expect(401);
+        });
+
+        it('should reject the same user accepting an invitation twice', async () => {
+            const projectId = await createProject('Duplicate Acceptance Project');
+
+            const created = await createInvitationForProject(projectId)
+                .expect(201);
+
+            const token = created.body.invitation.token;
+
+            await outsiderAgent
+                .post(`/invitations/${token}/accept`)
+                .expect(201);
+
+            await outsiderAgent
+                .post(`/invitations/${token}/accept`)
+                .expect(409);
+        });
+
+        it('should allow different users to accept the same invitation', async () => {
+            const projectId = await createProject('Reusable Invitation Project');
+
+            const created = await createInvitationForProject(
+                projectId,
+                'CONTRIBUTOR'
+            ).expect(201);
+
+            const token = created.body.invitation.token;
+
+            const firstAcceptance = await outsiderAgent
+                .post(`/invitations/${token}/accept`)
+                .expect(201);
+
+            const secondAcceptance = await secondOutsiderAgent
+                .post(`/invitations/${token}/accept`)
+                .expect(201);
+
+            expect(firstAcceptance.body.membership.role).toBe('CONTRIBUTOR');
+            expect(secondAcceptance.body.membership.role).toBe('CONTRIBUTOR');
+
+            const memberships = await prisma.projectMember.findMany({
+                where: { projectId },
+            });
+
+            expect(memberships).toHaveLength(2);
+            expect(memberships.map(membership => membership.userId)).toEqual(
+                expect.arrayContaining([outsiderId, secondOutsiderId])
+            );
+
+            const invitation = await prisma.projectInvite.findUnique({
+                where: {
+                    tokenHash: createHash('sha256')
+                        .update(token)
+                        .digest('hex'),
+                },
+            });
+
+            expect(invitation.revokedAt).toBeNull();
         });
     });
 });
