@@ -1,5 +1,10 @@
 import prisma from '../config/prisma.js';
 
+const validStatuses = [
+    'ONGOING',
+    'COMPLETED'
+];
+
 export async function getProjectItems(req, res, next) {
     try {
         const items = await prisma.checklistItem.findMany({
@@ -116,3 +121,202 @@ export async function createProjectItem(req, res, next) {
         next(error);
     }
 }
+
+
+export async function updateProjectItem(req, res, next) {
+    try {
+        const itemId = Number(req.params.id);
+
+        if (!Number.isSafeInteger(itemId) || itemId <= 0) {
+            return res.status(400).json({
+                message: 'Invalid checklist item ID.',
+            });
+        }
+
+        const { title, status, dueDate, assignedTo } = req.body;
+
+        if (
+            title === undefined &&
+            status === undefined &&
+            dueDate === undefined &&
+            assignedTo === undefined
+        ) {
+            return res.status(400).json({
+                message: 'At least one field must be provided.',
+            });
+        }
+
+        const existingItem = await prisma.checklistItem.findFirst({
+            where: {
+                id: itemId,
+                projectId: req.project.id,
+            },
+        });
+
+        if (!existingItem) {
+            return res.status(404).json({
+                message: 'Checklist item not found.',
+            });
+        }
+
+        const data = {};
+
+        if (title !== undefined) {
+            if (typeof title !== 'string' || !title.trim()) {
+                return res.status(400).json({
+                    message: 'Checklist item title cannot be empty.',
+                });
+            }
+
+            if (title.trim().length > 200) {
+                return res.status(400).json({
+                    message: 'Checklist item title cannot exceed 200 characters.',
+                });
+            }
+
+            data.title = title.trim();
+        }
+
+        if (status !== undefined) {
+            if (!validStatuses.includes(status)) {
+                return res.status(400).json({
+                    message: 'Invalid checklist item status.',
+                });
+            }
+
+            data.status = status;
+
+            if (
+                status === 'COMPLETED' &&
+                existingItem.status !== 'COMPLETED'
+            ) {
+                data.completedAt = new Date();
+            } else if (status === 'ONGOING') {
+                data.completedAt = null;
+            }
+        }
+
+        if (dueDate !== undefined) {
+            if (dueDate !== null) {
+                if (
+                    typeof dueDate !== 'string' ||
+                    Number.isNaN(Date.parse(dueDate))
+                ) {
+                    return res.status(400).json({
+                        message: 'Invalid due date.',
+                    });
+                }
+
+                data.dueDate = new Date(dueDate);
+            } else {
+                data.dueDate = null;
+            }
+        }
+
+        if (assignedTo !== undefined) {
+            if (assignedTo === null) {
+                data.assignedTo = null;
+            } else {
+                if (!Number.isSafeInteger(assignedTo) || assignedTo <= 0) {
+                    return res.status(400).json({
+                        message: 'Invalid assignee ID.',
+                    });
+                }
+
+                const assignee = await prisma.user.findFirst({
+                    where: {
+                        id: assignedTo,
+                        OR: [
+                            {
+                                ownedProjects: {
+                                    some: {
+                                        id: req.project.id,
+                                    },
+                                },
+                            },
+                            {
+                                memberships: {
+                                    some: {
+                                        projectId: req.project.id,
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                    select: {
+                        id: true,
+                    },
+                });
+
+                if (!assignee) {
+                    return res.status(400).json({
+                        message: 'Assignee must have access to this project.',
+                    });
+                }
+
+                data.assignedTo = assignee.id;
+            }
+        }
+
+        const item = await prisma.checklistItem.update({
+            where: {
+                id: itemId,
+            },
+            data,
+            include: {
+                assignee: {
+                    select: {
+                        id: true,
+                        username: true,
+                    },
+                },
+            },
+        });
+
+        return res.status(200).json({
+            message: 'Checklist item updated successfully.',
+            item,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+
+export async function deleteProjectItem(req, res, next) {
+    try {
+        const itemId = Number(req.params.id);
+
+        if (!Number.isSafeInteger(itemId) || itemId <= 0) {
+            return res.status(400).json({
+                message: 'Invalid checklist item ID.',
+            });
+        }
+
+        const existingItem = await prisma.checklistItem.findFirst({
+            where: {
+                id: itemId,
+                projectId: req.project.id,
+            },
+        });
+
+        if (!existingItem) {
+            return res.status(404).json({
+                message: 'Checklist item not found.',
+            });
+        }
+
+        await prisma.checklistItem.delete({
+            where: {
+                id: itemId,
+            },
+        });
+
+        return res.status(200).json({
+            message: 'Checklist item deleted successfully.',
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
