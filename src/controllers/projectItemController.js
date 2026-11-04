@@ -1,4 +1,5 @@
 import prisma from '../config/prisma.js';
+import { getIO } from '../socket.js';
 
 const validStatuses = [
     'ONGOING',
@@ -111,6 +112,11 @@ export async function createProjectItem(req, res, next) {
                 dueDate: dueDate ? new Date(dueDate) : null,
                 projectId: req.project.id,
             },
+        });
+
+        getIO.to(`project:${req.project.id}`).emit('item:created', {
+            projectId: req.project.id,
+            itemId: item.id,
         });
 
         return res.status(201).json({
@@ -273,6 +279,11 @@ export async function updateProjectItem(req, res, next) {
             },
         });
 
+        getIO().to(`project:${req.project.id}`).emit('item:updated', {
+            projectId: req.project.id,
+            itemId: item.id,
+        });
+
         return res.status(200).json({
             message: 'Checklist item updated successfully.',
             item,
@@ -310,6 +321,11 @@ export async function deleteProjectItem(req, res, next) {
             where: {
                 id: itemId,
             },
+        });
+
+        getIO().to(`project:${req.project.id}`).emit('item:deleted', {
+            projectId: req.project.id,
+            itemId,
         });
 
         return res.status(200).json({
