@@ -164,5 +164,280 @@ describe('Project routes', () => {
             expect(response.statusCode).toBe(401);
         });
     });
+    describe('PATCH /project/:id', () => {
+        it('should allow the project owner to update the project name', async () => {
+            const response = await ownerAgent
+                .patch(`/project/${projectId}`)
+                .send({ name: 'Updated Wastewater Project' });
+
+            expect(response.statusCode).toBe(200);
+            expect(response.body.project.name).toBe('Updated Wastewater Project');
+        });
+
+        it('should allow the project owner to update the description', async () => {
+            const response = await ownerAgent
+                .patch(`/project/${projectId}`)
+                .send({ description: 'Updated project description.' });
+
+            expect(response.statusCode).toBe(200);
+            expect(response.body.project.description).toBe(
+                'Updated project description.'
+            );
+        });
+
+        it('should allow the project owner to update the stage and status', async () => {
+            const response = await ownerAgent
+                .patch(`/project/${projectId}`)
+                .send({
+                    stage: 'SIXTY',
+                    status: 'COMPLETED',
+                });
+
+            expect(response.statusCode).toBe(200);
+            expect(response.body.project.stage).toBe('SIXTY');
+            expect(response.body.project.status).toBe('COMPLETED');
+        });
+
+        it('should allow the project owner to update multiple fields', async () => {
+            const response = await ownerAgent
+                .patch(`/project/${projectId}`)
+                .send({
+                    name: 'Final Project Name',
+                    description: 'Final project description.',
+                    stage: 'CONSTRUCTION',
+                    status: 'ONGOING',
+                });
+
+            expect(response.statusCode).toBe(200);
+            expect(response.body.project.name).toBe('Final Project Name');
+            expect(response.body.project.description).toBe(
+                'Final project description.'
+            );
+            expect(response.body.project.stage).toBe('CONSTRUCTION');
+            expect(response.body.project.status).toBe('ONGOING');
+        });
+
+        it('should allow the owner to clear the project description', async () => {
+            const response = await ownerAgent
+                .patch(`/project/${projectId}`)
+                .send({ description: null });
+
+            expect(response.statusCode).toBe(200);
+            expect(response.body.project.description).toBeNull();
+        });
+
+        it('should reject an empty update request', async () => {
+            const response = await ownerAgent
+                .patch(`/project/${projectId}`)
+                .send({});
+
+            expect(response.statusCode).toBe(400);
+        });
+
+        it('should reject an invalid project name', async () => {
+            const response = await ownerAgent
+                .patch(`/project/${projectId}`)
+                .send({ name: '   ' });
+
+            expect(response.statusCode).toBe(400);
+        });
+
+        it('should reject a project name exceeding 100 characters', async () => {
+            const response = await ownerAgent
+                .patch(`/project/${projectId}`)
+                .send({ name: 'A'.repeat(101) });
+
+            expect(response.statusCode).toBe(400);
+        });
+
+        it('should reject an invalid project stage', async () => {
+            const response = await ownerAgent
+                .patch(`/project/${projectId}`)
+                .send({ stage: 'INVALID_STAGE' });
+
+            expect(response.statusCode).toBe(400);
+        });
+
+        it('should reject an invalid project status', async () => {
+            const response = await ownerAgent
+                .patch(`/project/${projectId}`)
+                .send({ status: 'INVALID_STATUS' });
+
+            expect(response.statusCode).toBe(400);
+        });
+
+        it('should reject an invalid description type', async () => {
+            const response = await ownerAgent
+                .patch(`/project/${projectId}`)
+                .send({ description: 123 });
+
+            expect(response.statusCode).toBe(400);
+        });
+
+        it('should reject an invalid project ID', async () => {
+            const response = await ownerAgent
+                .patch('/project/abc')
+                .send({ name: 'Updated Project' });
+
+            expect(response.statusCode).toBe(400);
+        });
+
+        it('should reject project members who attempt to update the project', async () => {
+            const response = await memberAgent
+                .patch(`/project/${projectId}`)
+                .send({ name: 'Unauthorized Update' });
+
+            expect(response.statusCode).toBe(404);
+        });
+
+        it('should reject unrelated users who attempt to update the project', async () => {
+            const response = await unrelatedAgent
+                .patch(`/project/${projectId}`)
+                .send({ name: 'Unauthorized Update' });
+
+            expect(response.statusCode).toBe(404);
+        });
+
+        it('should reject unauthenticated users', async () => {
+            const response = await request(app)
+                .patch(`/project/${projectId}`)
+                .send({ name: 'Unauthorized Update' });
+
+            expect(response.statusCode).toBe(401);
+        });
+    });
+
+    describe('DELETE /project/:id', () => {
+        let deletionProjectId;
+
+        beforeEach(async () => {
+            const response = await ownerAgent
+                .post('/project')
+                .send({
+                    name: 'Project Deletion Test',
+                    stage: 'THIRTY',
+                });
+
+            expect(response.statusCode).toBe(201);
+
+            deletionProjectId = response.body.project.id;
+        });
+
+        it('should allow the project owner to delete the project', async () => {
+
+            const response = await ownerAgent
+                .delete(`/project/${deletionProjectId}`);
+
+            expect(response.statusCode).toBe(200);
+
+            expect(response.body.message).toBe(
+                'Project deleted successfully.'
+            );
+
+            const deletedProject = await prisma.project.findUnique({
+                where: { id: deletionProjectId },
+            });
+
+            expect(deletedProject).toBeNull();
+        });
+
+        it('should delete associated checklist items, memberships, and invitations', async () => {
+            const member = await prisma.user.findUnique({
+                where: { email: users[1].email },
+                select: { id: true },
+            });
+
+            await prisma.checklistItem.create({
+                data: {
+                    title: 'Test checklist item',
+                    projectId: deletionProjectId,
+                },
+            });
+
+            await prisma.projectMember.create({
+                data: {
+                    projectId: deletionProjectId,
+                    userId: member.id,
+                    role: 'CONTRIBUTOR',
+                },
+            });
+
+            await prisma.projectInvite.create({
+                data: {
+                    projectId: deletionProjectId,
+                    createdById: ownerAgent.user?.id ?? (
+                        await prisma.user.findUnique({
+                            where: { email: users[0].email },
+                            select: { id: true },
+                        })
+                    ).id,
+                    tokenHash: `test-token-${Date.now()}`,
+                    expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+                },
+            });
+
+            const response = await ownerAgent
+                .delete(`/project/${deletionProjectId}`);
+
+            expect(response.statusCode).toBe(200);
+
+            const [items, memberships, invitations] = await Promise.all([
+                prisma.checklistItem.count({
+                    where: { projectId: deletionProjectId },
+                }),
+                prisma.projectMember.count({
+                    where: { projectId: deletionProjectId },
+                }),
+                prisma.projectInvite.count({
+                    where: { projectId: deletionProjectId },
+                }),
+            ]);
+
+            expect(items).toBe(0);
+            expect(memberships).toBe(0);
+            expect(invitations).toBe(0);
+        });
+
+        it('should reject project members who attempt to delete the project', async () => {
+            const member = await prisma.user.findUnique({
+                where: { email: users[1].email },
+                select: { id: true },
+            });
+
+            await prisma.projectMember.create({
+                data: {
+                    projectId: deletionProjectId,
+                    userId: member.id,
+                    role: 'CONTRIBUTOR',
+                },
+            });
+
+            const response = await memberAgent
+                .delete(`/project/${deletionProjectId}`);
+
+            expect(response.statusCode).toBe(404);
+        });
+
+        it('should reject unrelated users who attempt to delete the project', async () => {
+            const response = await unrelatedAgent
+                .delete(`/project/${deletionProjectId}`);
+
+            expect(response.statusCode).toBe(404);
+        });
+
+        it('should reject invalid project IDs', async () => {
+            const response = await ownerAgent
+                .delete('/project/abc');
+
+            expect(response.statusCode).toBe(400);
+        });
+
+        it('should reject unauthenticated users', async () => {
+            const response = await request(app)
+                .delete(`/project/${deletionProjectId}`);
+
+            expect(response.statusCode).toBe(401);
+        });
+    });
 });
 

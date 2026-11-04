@@ -1,18 +1,30 @@
 import { Router } from 'express';
 import requireAuth from '../middleware/requireAuth.js';
+import requireProjectOwner from '../middleware/requireProjectOwner.js';
+
 import {
     getProjects,
     getProject,
-    createProject
+    createProject,
+    updateProject,
+    deleteProject
 } from '../controllers/projectController.js';
 
 const router = Router();
 
+router.use(requireAuth);
+
 // GET
-router.get('/', requireAuth, getProjects);
-router.get('/:id', requireAuth, getProject);
+router.get('/', getProjects);
+router.get('/:id', getProject);
 
 // POST
-router.post('/', requireAuth, createProject);
+router.post('/', createProject);
+
+// PATCH
+router.patch('/:id', requireProjectOwner, updateProject);
+
+// DELETE
+router.delete('/:id', requireProjectOwner, deleteProject);
 
 export default router;

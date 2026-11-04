@@ -1,5 +1,19 @@
 import prisma from "../config/prisma.js";
 
+const validStages = [
+    'TEN',
+    'THIRTY',
+    'SIXTY',
+    'NINETY',
+    'BID',
+    'CONSTRUCTION'
+];
+
+const validStatuses = [
+    'ONGOING',
+    'COMPLETED'
+]
+
 export async function getProjects(req, res, next) {
     try {
         const userId = req.user.id;
@@ -121,14 +135,6 @@ export async function createProject(req, res, next) {
     try {
         const { name, description, stage } = req.body;
         const ownerId = req.user.id;
-        const validStages = [
-            'TEN',
-            'THIRTY',
-            'SIXTY',
-            'NINETY',
-            'BID',
-            'CONSTRUCTION',
-        ];
 
         if (!name || !name.trim()) {
             return res.status(400).json({
@@ -166,6 +172,110 @@ export async function createProject(req, res, next) {
         return res.status(201).json({
             message: 'Projet created successfully.',
             project,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function updateProject(req, res, next) {
+    try {
+        const { name, description, stage, status } = req.body;
+
+        if (
+            name === undefined &&
+            description === undefined &&
+            stage === undefined &&
+            status === undefined
+        ) {
+            return res.status(400).json({
+                message: 'At least one field must be provided.',
+            });
+        }
+
+        const data = {};
+
+        if (name !== undefined) {
+            if (typeof name !== 'string' || !name.trim()) {
+                return res.status(400).json({
+                    message: 'Project name cannot be empty.',
+                });
+            }
+
+            if (name.trim().length > 100) {
+                return res.status(400).json({
+                    message: 'Project name cannot exceed 100 characters.',
+                });
+            }
+
+            data.name = name.trim();
+        }
+
+        if (description !== undefined) {
+            if (
+                description !== null &&
+                typeof description !== 'string'
+            ) {
+                return res.status(400).json({
+                    message: 'Description must be a string or null.',
+                });
+            }
+
+            if (description && description.length > 1000) {
+                return res.status(400).json({
+                    message: 'Description cannot exceed 1000 characters.',
+                });
+            }
+
+            data.description = description?.trim() || null;
+        }
+
+        if (stage !== undefined) {
+            if (!validStages.includes(stage)) {
+                return res.status(400).json({
+                    message: 'Invalid project stage.',
+                });
+            }
+
+            data.stage = stage;
+        }
+
+        if (status !== undefined) {
+            if (!validStatuses.includes(status)) {
+                return res.status(400).json({
+                    message: 'Invalid project status.',
+                });
+            }
+
+            data.status = status;
+        }
+
+        const project = await prisma.project.update({
+            where: {
+                id: req.project.id,
+            },
+            data,
+        });
+
+        return res.status(200).json({
+            message: 'Project updated successfully.',
+            project,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function deleteProject(req, res, next) {
+    try {
+        await prisma.project.delete({
+            where: {
+                id: req.project.id,
+            },
+        });
+
+        return res.status(200).json({
+            message: 'Project deleted successfully.',
         });
     } catch (error) {
         next(error);
