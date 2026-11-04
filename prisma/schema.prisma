@@ -25,6 +25,7 @@ model Project {
     id          Int           @id @default(autoincrement())
     name        String
     description String?
+    projectCode String?
     ownerId     Int
     status      ProjectStatus @default(ONGOING)
     stage       ProjectStage  @default(TEN)

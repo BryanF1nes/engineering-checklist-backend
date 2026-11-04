@@ -133,7 +133,7 @@ export async function getProject(req, res, next) {
 
 export async function createProject(req, res, next) {
     try {
-        const { name, description, stage } = req.body;
+        const { name, description, code, stage } = req.body;
         const ownerId = req.user.id;
 
         if (!name || !name.trim()) {
@@ -145,6 +145,12 @@ export async function createProject(req, res, next) {
         if (name.trim().length > 100) {
             return res.status(400).json({
                 message: 'Project name cannot exceed 100 characters.',
+            });
+        }
+
+        if (code.trim().length > 10) {
+            return res.status(400).json({
+                message: 'Project code cannot exceed 10 characters.',
             });
         }
 
@@ -164,6 +170,7 @@ export async function createProject(req, res, next) {
             data: {
                 name: name.trim(),
                 description: description?.trim() || null,
+                code: code,
                 stage,
                 ownerId
             }
@@ -180,11 +187,12 @@ export async function createProject(req, res, next) {
 
 export async function updateProject(req, res, next) {
     try {
-        const { name, description, stage, status } = req.body;
+        const { name, description, code, stage, status } = req.body;
 
         if (
             name === undefined &&
             description === undefined &&
+            code === undefined &&
             stage === undefined &&
             status === undefined
         ) {
@@ -228,6 +236,25 @@ export async function updateProject(req, res, next) {
             }
 
             data.description = description?.trim() || null;
+        }
+
+        if (code !== undefined) {
+            if (
+                code !== null &&
+                typeof code !== 'string'
+            ) {
+                return res.status(400).json({
+                    message: 'Project code must be a string or null.',
+                });
+            }
+
+            if (code && code.length > 10) {
+                return res.status(400).json({
+                    message: 'Project code cannot exceed 10 characters.',
+                });
+            }
+
+            data.projectCode = code?.trim() || null;
         }
 
         if (stage !== undefined) {
