@@ -1,116 +1,117 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+    provider = "prisma-client"
+    output   = "../generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+    provider = "postgresql"
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    id        Int      @id @default(autoincrement())
+    username  String
+    email     String   @unique
+    password  String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  ownedProjects  Project[]       @relation("ProjectOwner")
-  memberships    ProjectMember[]
-  assignedTasks  ChecklistItem[] @relation("TaskAssignee")
-  createdInvites ProjectInvite[]
+    ownedProjects  Project[]       @relation("ProjectOwner")
+    memberships    ProjectMember[]
+    assignedTasks  ChecklistItem[] @relation("TaskAssignee")
+    createdInvites ProjectInvite[]
 }
 
 model Project {
-  id          Int           @id @default(autoincrement())
-  name        String
-  description String?
-  ownerId     Int
-  status      ProjectStatus @default(ONGOING)
-  stage       ProjectStage  @default(TEN)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  finishedAt  DateTime?
+    id          Int           @id @default(autoincrement())
+    name        String
+    description String?
+    ownerId     Int
+    status      ProjectStatus @default(ONGOING)
+    stage       ProjectStage  @default(TEN)
+    createdAt   DateTime      @default(now())
+    updatedAt   DateTime      @updatedAt
+    finishedAt  DateTime?
 
-  owner User @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+    owner User @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  members     ProjectMember[]
-  items       ChecklistItem[]
-  invitations ProjectInvite[]
+    members     ProjectMember[]
+    items       ChecklistItem[]
+    invitations ProjectInvite[]
 
-  @@index([ownerId])
+    @@index([ownerId])
 }
 
 model ChecklistItem {
-  id          Int        @id @default(autoincrement())
-  title       String
-  status      ItemStatus @default(ONGOING)
-  dueDate     DateTime?
-  projectId   Int
-  assignedTo  Int?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  completedAt DateTime?
+    id          Int        @id @default(autoincrement())
+    title       String
+    status      ItemStatus @default(ONGOING)
+    dueDate     DateTime?
+    projectId   Int
+    assignedTo  Int?
+    createdAt   DateTime   @default(now())
+    updatedAt   DateTime   @updatedAt
+    completedAt DateTime?
 
-  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  assignee User?   @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+    project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+    assignee User?   @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
 
-  @@index([projectId])
-  @@index([assignedTo])
+    @@index([projectId])
+    @@index([assignedTo])
 }
 
 model ProjectMember {
-  id        Int         @id @default(autoincrement())
-  projectId Int
-  userId    Int
-  role      ProjectRole @default(VIEWER)
-  joinedAt  DateTime    @default(now())
+    id        Int         @id @default(autoincrement())
+    projectId Int
+    userId    Int
+    role      ProjectRole @default(VIEWER)
+    joinedAt  DateTime    @default(now())
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+    project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([projectId, userId])
-  @@index([userId])
+    @@unique([projectId, userId])
+    @@index([userId])
 }
 
 model ProjectInvite {
-  id          Int       @id @default(autoincrement())
-  projectId   Int
-  createdById Int
-  tokenHash   String    @unique
-  expiresAt   DateTime
-  revokedAt   DateTime?
-  createdAt   DateTime  @default(now())
+    id          Int         @id @default(autoincrement())
+    projectId   Int
+    role        ProjectRole @default(VIEWER)
+    createdById Int
+    tokenHash   String      @unique
+    expiresAt   DateTime
+    revokedAt   DateTime?
+    createdAt   DateTime    @default(now())
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+    project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+    createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
-  @@index([projectId])
+    @@index([projectId])
 }
 
 enum ProjectRole {
-  CONTRIBUTOR
-  VIEWER
+    CONTRIBUTOR
+    VIEWER
 }
 
 enum ItemStatus {
-  ONGOING
-  COMPLETED
+    ONGOING
+    COMPLETED
 }
 
 enum ProjectStage {
-  TEN
-  THIRTY
-  SIXTY
-  NINETY
-  BID
-  CONSTRUCTION
+    TEN
+    THIRTY
+    SIXTY
+    NINETY
+    BID
+    CONSTRUCTION
 }
 
 enum ProjectStatus {
-  ONGOING
-  UNDER_REVIEW
-  COMPLETED
+    ONGOING
+    UNDER_REVIEW
+    COMPLETED
 }

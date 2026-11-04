@@ -10,6 +10,12 @@ import {
     deleteProject
 } from '../controllers/projectController.js';
 
+import {
+    createInvitation,
+    getInvitations,
+    revokeInvitation
+} from '../controllers/invitationController.js';
+
 const router = Router();
 
 router.use(requireAuth);
@@ -26,5 +32,10 @@ router.patch('/:id', requireProjectOwner, updateProject);
 
 // DELETE
 router.delete('/:id', requireProjectOwner, deleteProject);
+
+// Project Invitations
+router.get('/:id/invitations', requireProjectOwner, getInvitations);
+router.post('/:id/invitations', requireProjectOwner, createInvitation);
+router.delete('/:id/invitations/:inviteId', requireProjectOwner, revokeInvitation);
 
 export default router;
