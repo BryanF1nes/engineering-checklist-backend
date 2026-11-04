@@ -3,8 +3,10 @@ import passport from './config/passport.js';
 import { sessionMiddleware } from './app.js';
 import prisma from './config/prisma.js';
 
+let io;
+
 export function initializeSocket(server) {
-    const io = new Server(server, {
+    io = new Server(server, {
         cors: {
             origin: 'http://localhost:8000',
             credentials: true,
@@ -63,7 +65,6 @@ export function initializeSocket(server) {
                     });
                 }
 
-                // Leave the previously active project room.
                 if (socket.data.activeProjectRoom) {
                     await socket.leave(socket.data.activeProjectRoom);
                 }
@@ -103,8 +104,9 @@ export function initializeSocket(server) {
 
 export function getIO() {
     if (!io) {
-        throw new Error('Socket.IO has not been initialized.')
+        throw new Error('Socket.IO has not been initialized.');
     }
 
     return io;
 }
+
