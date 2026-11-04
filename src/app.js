@@ -4,6 +4,7 @@ import passport from "./config/passport.js";
 import cors from "cors";
 
 import apiRoutes from "./routes/index.js";
+import authRoutes from "./routes/authRoutes.js";
 import errorHandler from "./middleware/error.middleware.js";
 
 const app = express();
@@ -29,6 +30,7 @@ app.use(passport.session());
 
 // API routes
 app.use("/api", apiRoutes);
+app.use("/auth", authRoutes);
 
 // Error handling
 app.use(errorHandler);
