@@ -13,7 +13,7 @@ CREATE TYPE "ProjectStatus" AS ENUM ('ONGOING', 'UNDER_REVIEW', 'COMPLETED');
 -- CreateTable
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
-    "name" TEXT NOT NULL,
+    "username" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

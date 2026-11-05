@@ -7,7 +7,7 @@ import prisma from './prisma.js';
 passport.use(
     new LocalStrategy(
         {
-            nameField: 'email',
+            usernameField: 'email',
         },
         async (email, password, done) => {
             try {
