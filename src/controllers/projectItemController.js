@@ -19,6 +19,12 @@ export async function getProjectItems(req, res, next) {
                         username: true,
                     },
                 },
+                completedBy: {
+                    select: {
+                        id: true,
+                        username: true,
+                    },
+                },
             },
             orderBy: {
                 createdAt: 'desc',
@@ -52,6 +58,12 @@ export async function getProjectItem(req, res, next) {
             },
             include: {
                 assignee: {
+                    select: {
+                        id: true,
+                        username: true,
+                    },
+                },
+                completedBy: {
                     select: {
                         id: true,
                         username: true,
@@ -142,6 +154,15 @@ export async function updateProjectItem(req, res, next) {
         const { title, status, dueDate, assignedTo } = req.body;
 
         if (
+            req.projectRole === 'VIEWER' &&
+            Object.keys(req.body).some(field => field !== 'status')
+        ) {
+            return res.status(403).json({
+                message: 'Viewers can only update checklist item status.',
+            });
+        }
+
+        if (
             title === undefined &&
             status === undefined &&
             dueDate === undefined &&
@@ -197,8 +218,10 @@ export async function updateProjectItem(req, res, next) {
                 existingItem.status !== 'COMPLETED'
             ) {
                 data.completedAt = new Date();
+                data.completedById = req.user.id;
             } else if (status === 'ONGOING') {
                 data.completedAt = null;
+                data.completedById = null;
             }
         }
 
@@ -271,6 +294,12 @@ export async function updateProjectItem(req, res, next) {
             data,
             include: {
                 assignee: {
+                    select: {
+                        id: true,
+                        username: true,
+                    },
+                },
+                completedBy: {
                     select: {
                         id: true,
                         username: true,

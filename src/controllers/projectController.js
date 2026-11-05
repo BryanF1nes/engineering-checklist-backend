@@ -1,4 +1,5 @@
 import prisma from "../config/prisma.js";
+import { getIO } from "../socket.js";
 
 const validStages = [
     'TEN',
@@ -104,6 +105,12 @@ export async function getProject(req, res, next) {
                 items: {
                     include: {
                         assignee: {
+                            select: {
+                                id: true,
+                                username: true,
+                            },
+                        },
+                        completedBy: {
                             select: {
                                 id: true,
                                 username: true,
@@ -284,6 +291,10 @@ export async function updateProject(req, res, next) {
             data,
         });
 
+        getIO().to(`project:${project.id}`).emit(`project:updated`, {
+            projectId: project.id,
+        });
+
         return res.status(200).json({
             message: 'Project updated successfully.',
             project,
@@ -299,6 +310,10 @@ export async function deleteProject(req, res, next) {
             where: {
                 id: req.project.id,
             },
+        });
+
+        getIO().to(`project:${project.id}`).emit(`project:deleted`, {
+            projectId: project.id,
         });
 
         return res.status(200).json({

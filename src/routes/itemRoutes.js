@@ -23,7 +23,7 @@ router.get('/:id', getProjectItem);
 router.post('/', requireProjectRole('CONTRIBUTOR'), createProjectItem);
 
 // PATCH
-router.patch('/:id', requireProjectRole('CONTRIBUTOR'), updateProjectItem);
+router.patch('/:id', requireProjectRole('CONTRIBUTOR', 'VIEWER'), updateProjectItem);
 
 // DELETE
 router.delete('/:id', requireProjectRole('CONTRIBUTOR'), deleteProjectItem);

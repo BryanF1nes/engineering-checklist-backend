@@ -23,6 +23,8 @@ export default function requireProjectRole(...allowedRoles) {
                 },
             });
 
+            req.projectRole = membership?.role;
+
             if (!membership || !allowedRoles.includes(membership.role)) {
                 return res.status(403).json({
                     message: 'You do not have permission to perform this action.',
