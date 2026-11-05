@@ -170,7 +170,7 @@ export async function createProject(req, res, next) {
             data: {
                 name: name.trim(),
                 description: description?.trim() || null,
-                code: code,
+                projectCode: code,
                 stage,
                 ownerId
             }

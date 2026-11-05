@@ -114,7 +114,7 @@ export async function createProjectItem(req, res, next) {
             },
         });
 
-        getIO.to(`project:${req.project.id}`).emit('item:created', {
+        getIO().to(`project:${req.project.id}`).emit('item:created', {
             projectId: req.project.id,
             itemId: item.id,
         });
