@@ -93,7 +93,7 @@ export async function getProjectItem(req, res, next) {
 
 export async function createProjectItem(req, res, next) {
     try {
-        const { title, dueDate } = req.body;
+        const { title, dueDate, estimatedDuration } = req.body;
 
         if (typeof title !== 'string' || !title.trim()) {
             return res.status(400).json({
@@ -122,6 +122,7 @@ export async function createProjectItem(req, res, next) {
             data: {
                 title: title.trim(),
                 dueDate: dueDate ? new Date(dueDate) : null,
+                estimatedDuration: estimatedDuration || null,
                 projectId: req.project.id,
             },
         });
@@ -151,7 +152,7 @@ export async function updateProjectItem(req, res, next) {
             });
         }
 
-        const { title, status, dueDate, assignedTo } = req.body;
+        const { title, status, dueDate, estimatedDuration, assignedTo } = req.body;
 
         if (
             req.projectRole === 'VIEWER' &&
@@ -166,7 +167,8 @@ export async function updateProjectItem(req, res, next) {
             title === undefined &&
             status === undefined &&
             dueDate === undefined &&
-            assignedTo === undefined
+            assignedTo === undefined &&
+            estimatedDuration === undefined
         ) {
             return res.status(400).json({
                 message: 'At least one field must be provided.',
@@ -223,6 +225,10 @@ export async function updateProjectItem(req, res, next) {
                 data.completedAt = null;
                 data.completedById = null;
             }
+        }
+
+        if (estimatedDuration !== undefined) {
+            data.estimatedDuration = estimatedDuration || null;
         }
 
         if (dueDate !== undefined) {
