@@ -9,7 +9,7 @@ describe('Authentication routes', () => {
     const password = 'TestPassword123!';
 
     const testUser = {
-        username: 'auth_test_user',
+        name: 'auth_test_user',
         email: `auth_${testId}@example.com`,
         password,
     };
@@ -86,7 +86,7 @@ describe('Authentication routes', () => {
     describe('POST /auth/register', () => {
         it('should successfully register a new user', async () => {
             const response = await registerUser({
-                username: 'new_test_user',
+                name: 'new_test_user',
                 email: `new_${testId}@example.com`,
                 password,
             });
@@ -98,7 +98,7 @@ describe('Authentication routes', () => {
             const response = await request(app)
                 .post('/auth/register')
                 .send({
-                    username: 'missing_email_user',
+                    name: 'missing_email_user',
                     password,
                 });
 
@@ -109,7 +109,7 @@ describe('Authentication routes', () => {
             const response = await request(app)
                 .post('/auth/register')
                 .send({
-                    username: 'short_password_user',
+                    name: 'short_password_user',
                     email: `short_${testId}@example.com`,
                     password: 'short',
                 });
@@ -191,7 +191,7 @@ describe('Authentication routes', () => {
             const user = response.body.user ?? response.body;
 
             expect(user).toMatchObject({
-                username: testUser.username,
+                name: testUser.name,
                 email: testUser.email,
             });
 

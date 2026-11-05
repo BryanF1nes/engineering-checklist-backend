@@ -16,22 +16,22 @@ describe('Project checklist item routes', () => {
 
     const testUsers = [
         {
-            username: 'project_owner',
+            name: 'project_owner',
             email: 'project_owner@test.com',
             password: 'Password123!',
         },
         {
-            username: 'project_contributor',
+            name: 'project_contributor',
             email: 'project_contributor@test.com',
             password: 'Password123!',
         },
         {
-            username: 'project_viewer',
+            name: 'project_viewer',
             email: 'project_viewer@test.com',
             password: 'Password123!',
         },
         {
-            username: 'project_outsider',
+            name: 'project_outsider',
             email: 'project_outsider@test.com',
             password: 'Password123!',
         },
@@ -44,7 +44,7 @@ describe('Project checklist item routes', () => {
         for (const user of testUsers) {
             const createdUser = await prisma.user.create({
                 data: {
-                    username: user.username,
+                    name: user.name,
                     email: user.email,
                     password: passwordHash,
                 },

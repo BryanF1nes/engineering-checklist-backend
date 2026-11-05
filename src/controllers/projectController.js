@@ -34,7 +34,7 @@ export async function getProjects(req, res, next) {
                 owner: {
                     select: {
                         id: true,
-                        username: true,
+                        name: true,
                     },
                 },
                 _count: {
@@ -88,7 +88,7 @@ export async function getProject(req, res, next) {
                 owner: {
                     select: {
                         id: true,
-                        username: true,
+                        name: true,
                     },
                 },
                 members: {
@@ -96,7 +96,7 @@ export async function getProject(req, res, next) {
                         user: {
                             select: {
                                 id: true,
-                                username: true,
+                                name: true,
                                 email: true,
                             },
                         },
@@ -107,13 +107,13 @@ export async function getProject(req, res, next) {
                         assignee: {
                             select: {
                                 id: true,
-                                username: true,
+                                name: true,
                             },
                         },
                         completedBy: {
                             select: {
                                 id: true,
-                                username: true,
+                                name: true,
                             },
                         },
                     },

@@ -75,7 +75,7 @@ export async function getInvitations(req, res, next) {
                 createdBy: {
                     select: {
                         id: true,
-                        username: true,
+                        name: true,
                     },
                 },
             },

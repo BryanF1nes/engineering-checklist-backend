@@ -1,4 +1,3 @@
-
 import request from 'supertest';
 import { createHash } from 'node:crypto';
 
@@ -9,22 +8,22 @@ const password = 'test-password-123';
 
 const users = [
     {
-        username: 'invite-owner',
+        name: 'invite-owner',
         email: `invite-owner-${Date.now()}@example.com`,
         password,
     },
     {
-        username: 'invite-member',
+        name: 'invite-member',
         email: `invite-member-${Date.now()}@example.com`,
         password,
     },
     {
-        username: 'invite-outsider',
+        name: 'invite-outsider',
         email: `invite-outsider-${Date.now()}@example.com`,
         password,
     },
     {
-        username: 'invite-second-outsider',
+        name: 'invite-second-outsider',
         email: `invite-second-outsider-${Date.now()}@example.com`,
         password,
     },

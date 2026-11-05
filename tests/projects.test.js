@@ -15,15 +15,15 @@ describe('Project routes', () => {
 
     const users = [
         {
-            username: 'project_owner',
+            name: 'project_owner',
             email: `owner_${testId}@example.com`,
         },
         {
-            username: 'project_member',
+            name: 'project_member',
             email: `member_${testId}@example.com`,
         },
         {
-            username: 'unrelated_user',
+            name: 'unrelated_user',
             email: `unrelated_${testId}@example.com`,
         },
     ];

@@ -7,7 +7,7 @@ import prisma from './prisma.js';
 passport.use(
     new LocalStrategy(
         {
-            usernameField: 'email',
+            nameField: 'email',
         },
         async (email, password, done) => {
             try {
@@ -30,7 +30,7 @@ passport.use(
 
                 return done(null, {
                     id: user.id,
-                    username: user.username,
+                    name: user.name,
                     email: user.email,
                 });
             } catch (error) {
@@ -50,7 +50,7 @@ passport.deserializeUser(async (id, done) => {
             where: { id },
             select: {
                 id: true,
-                username: true,
+                name: true,
                 email: true,
             },
         });
