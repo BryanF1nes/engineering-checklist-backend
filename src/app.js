@@ -12,9 +12,16 @@ import errorHandler from "./middleware/error.middleware.js";
 
 const app = express();
 
+app.set('trust proxy', 1);
+
+const allowedOrigins = [
+    'http://localhost:8000',
+    'https://bryanf1nes.github.io',
+];
+
 // Middleware
 app.use(cors({
-    origin: 'http://localhost:8000',
+    origin: allowedOrigins,
     credentials: true,
 }));
 app.use(express.json());
@@ -26,7 +33,7 @@ export const sessionMiddleware = session({
     cookie: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 1000 * 60 * 60 * 24,
     }
 });
