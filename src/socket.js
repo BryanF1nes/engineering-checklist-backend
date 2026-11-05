@@ -8,7 +8,7 @@ let io;
 export function initializeSocket(server) {
     io = new Server(server, {
         cors: {
-            origin: 'http://localhost:8000',
+            origin: ['http://localhost:8000', 'https://bryanf1nes.github.io'],
             credentials: true,
         },
     });
