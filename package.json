@@ -8,10 +8,10 @@
     "start": "NODE_ENV=production node src/server.js",
     "dev": "NODE_ENV=development nodemon src/server.js",
 
-    "db:generate": "prisma generate",
+    "db:generate": "node --env-file=.env.dev ./node_modules/prisma/build/index.js generate",
     "db:migrate": "node --env-file=.env.dev ./node_modules/prisma/build/index.js migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:studio": "prisma studio",
+    "db:studio": "node --env-file=.env.dev ./node_modules/prisma/build/index.js studio",
 
     "test": "NODE_OPTIONS=--experimental-vm-modules node --env-file=.env.test ./node_modules/jest/bin/jest.js",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules node --env-file=.env.test ./node_modules/jest/bin/jest.js --watch",
