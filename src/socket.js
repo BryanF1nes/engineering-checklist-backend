@@ -1,6 +1,5 @@
 import { Server } from 'socket.io';
-import passport from './config/passport.js';
-import { sessionMiddleware } from './app.js';
+import { verifyAccessToken } from './utils/tokens.js';
 import prisma from './config/prisma.js';
 
 let io;
@@ -9,24 +8,34 @@ export function initializeSocket(server) {
     io = new Server(server, {
         cors: {
             origin: ['http://localhost:8000', 'https://bryanf1nes.github.io'],
-            credentials: true,
         },
     });
 
-    io.engine.use(sessionMiddleware);
-    io.engine.use(passport.initialize());
-    io.engine.use(passport.session());
-
     io.use((socket, next) => {
-        if (!socket.request.user) {
-            return next(new Error('Unauthorized'));
-        }
+        try {
+            const token = socket.handshake.auth?.token;
 
-        next();
+            if (!token) {
+                return next(new Error('Unauthorized'));
+            }
+
+            const decoded = verifyAccessToken(token);
+
+            socket.data.user = {
+                id: decoded.id,
+                name: decoded.name,
+                email: decoded.email,
+            };
+
+            next();
+
+        } catch (error) {
+            next(new Error('Unauthorized'));
+        }
     });
 
     io.on('connection', socket => {
-        console.log(`User connected: ${socket.request.user.id}`);
+        console.log(`User connected: ${socket.data.user.id}`);
 
         socket.on('project:join', async (projectId, callback) => {
             try {
@@ -43,11 +52,11 @@ export function initializeSocket(server) {
                     where: {
                         id: projectId,
                         OR: [
-                            { ownerId: socket.request.user.id },
+                            { ownerId: socket.data.user.id },
                             {
                                 members: {
                                     some: {
-                                        userId: socket.request.user.id,
+                                        userId: socket.data.user.id,
                                     },
                                 },
                             },
@@ -76,7 +85,7 @@ export function initializeSocket(server) {
                 socket.data.activeProjectRoom = room;
 
                 console.log(
-                    `User ${socket.request.user.id} joined ${room}`
+                    `User ${socket.data.user.id} joined ${room}`
                 );
 
                 callback?.({
@@ -95,7 +104,7 @@ export function initializeSocket(server) {
         });
 
         socket.on('disconnect', () => {
-            console.log(`User disconnected: ${socket.request.user.id}`);
+            console.log(`User disconnected: ${socket.data.user.id}`);
         });
     });
 

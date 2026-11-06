@@ -1,10 +1,5 @@
 import express from "express";
-import session from "express-session";
-import passport from "./config/passport.js";
 import cors from "cors";
-
-import connectPgSimple from "connect-pg-simple";
-import pg from "pg";
 
 import apiRoutes from "./routes/index.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -28,34 +23,6 @@ app.use(cors({
     credentials: true,
 }));
 app.use(express.json());
-
-const PgSession = connectPgSimple(session);
-
-const pool = new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
-    max: 5,
-});
-
-export const sessionMiddleware = session({
-    store: new PgSession({
-        pool,
-        tableName: 'user_sessions',
-        createTableIfMissing: true,
-    }),
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge: 1000 * 60 * 60 * 24,
-    }
-});
-
-app.use(sessionMiddleware);
-app.use(passport.initialize())
-app.use(passport.session());
 
 // API routes
 app.use("/api", apiRoutes);

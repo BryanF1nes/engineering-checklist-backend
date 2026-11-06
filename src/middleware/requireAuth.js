@@ -1,9 +1,27 @@
+import { verifyAccessToken } from '../utils/tokens.js';
+
 export default function requireAuth(req, res, next) {
-    if (req.isAuthenticated()) {
-        return next();
+    const [scheme, token] = (req.headers.authorization || '').split(' ');
+
+    if (scheme !== 'Bearer' || !token) {
+        return res.status(401).json({
+            message: 'You must be logged in to access this resource.',
+        });
     }
 
-    return res.status(401).json({
-        message: "You must be logged in to access this resource.",
-    });
+    try {
+        const decoded = verifyAccessToken(token);
+
+        req.user = {
+            id: decoded.id,
+            name: decoded.name,
+            email: decoded.email,
+        };
+
+        next();
+    } catch (error) {
+        return res.status(401).json({
+            message: 'Invalid or expired access token.',
+        });
+    }
 }

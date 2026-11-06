@@ -21,6 +21,8 @@ model User {
     completedTasks ChecklistItem[] @relation("TaskCompletedBy")
     createdInvites ProjectInvite[]
     checklistItems ChecklistItem[]
+
+    refreshTokens RefreshToken[]
 }
 
 model Project {
@@ -98,6 +100,22 @@ model ProjectInvite {
     createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
     @@index([projectId])
+}
+
+model RefreshToken {
+    id        String    @id @default(cuid())
+    tokenHash String    @unique
+    familyId  String
+    userId    Int
+    expiresAt DateTime
+    revokedAt DateTime?
+    createdAt DateTime  @default(now())
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+    @@index([familyId])
+    @@index([expiresAt])
 }
 
 enum ProjectRole {
