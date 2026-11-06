@@ -5,17 +5,17 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "NODE_ENV=production node src/server.js",
+    "start": "node src/server.js",
     "dev": "nodemon --exec \"node --env-file=.env.dev\" src/server.js",
 
-    "db:generate": "node --env-file=.env.dev ./node_modules/prisma/build/index.js generate",
-    "db:migrate": "node --env-file=.env.dev ./node_modules/prisma/build/index.js migrate dev",
-    "db:migrate:deploy": "node --env-file=.env ./node_modules/prisma/build/index.js migrate deploy",
-    "db:studio": "node --env-file=.env.dev ./node_modules/prisma/build/index.js studio",
+    "db:generate": "prisma generate",
+    "db:generate:dev": "node --env-file=.env.dev ./node_modules/prisma/build/index.js generate",
 
-    "test": "NODE_OPTIONS=--experimental-vm-modules node --env-file=.env.test ./node_modules/jest/bin/jest.js",
-    "test:watch": "NODE_OPTIONS=--experimental-vm-modules node --env-file=.env.test ./node_modules/jest/bin/jest.js --watch",
-    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules node --env-file=.env.test ./node_modules/jest/bin/jest.js --coverage"
+    "db:migrate": "node --env-file=.env.dev ./node_modules/prisma/build/index.js migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:deploy:dev": "node --env-file=.env.dev ./node_modules/prisma/build/index.js migrate deploy",
+
+    "db:studio": "node --env-file=.env.dev ./node_modules/prisma/build/index.js studio"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
