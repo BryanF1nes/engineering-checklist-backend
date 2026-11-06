@@ -7,14 +7,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon --exec \"node --env-file=.env.dev\" src/server.js",
-
     "db:generate": "prisma generate",
     "db:generate:dev": "node --env-file=.env.dev ./node_modules/prisma/build/index.js generate",
-
     "db:migrate": "node --env-file=.env.dev ./node_modules/prisma/build/index.js migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:deploy:dev": "node --env-file=.env.dev ./node_modules/prisma/build/index.js migrate deploy",
-
     "db:studio": "node --env-file=.env.dev ./node_modules/prisma/build/index.js studio"
   },
   "dependencies": {
@@ -32,5 +29,11 @@
     "nodemon": "^3.1.14",
     "prisma": "^7.10.1",
     "supertest": "^7.3.1"
+  },
+  "allowScripts": {
+    "@parcel/watcher@2.6.0": true,
+    "@prisma/engines@7.10.1": true,
+    "bcrypt@6.0.0": true,
+    "prisma@7.10.1": true
   }
 }
