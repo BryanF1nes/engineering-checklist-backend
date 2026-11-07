@@ -2,6 +2,9 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import prisma from "../config/prisma.js";
 
+import { broadcastAvatarUpdate } from "../socket.js";
+import { getRandomAvatarColor } from "../utils/avatarColors.js";
+import { AVATAR_COLORS } from "../utils/avatarColors.js";
 import {
     generateAccessToken,
     generateRefreshToken,
@@ -53,6 +56,7 @@ export async function login(req, res, next) {
             id: user.id,
             name: user.name,
             email: user.email,
+            avatarColor: user.avatarColor,
         };
 
         return res.status(200).json({
@@ -157,6 +161,7 @@ export async function refresh(req, res, next) {
             id: storedToken.user.id,
             name: storedToken.user.name,
             email: storedToken.user.email,
+            avatarColor: storedToken.user.avatarColor,
         };
 
         return res.status(200).json({
@@ -224,18 +229,87 @@ export async function register(req, res, next) {
             data: {
                 name: name.trim(),
                 email: normalizedEmail,
-                password: passwordHash
+                password: passwordHash,
+                avatarColor: getRandomAvatarColor(),
             },
             select: {
                 id: true,
                 name: true,
                 email: true,
+                avatarColor: true,
                 createdAt: true,
             },
         });
 
         return res.status(201).json({
             message: 'Account created successfully.', user
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function getCurrentUser(req, res, next) {
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                id: req.user.id,
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                avatarColor: true,
+            },
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found.',
+            });
+        }
+
+
+        return res.status(200).json({ user });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function updateAvatarColor(req, res, next) {
+    try {
+        const { avatarColor } = req.body;
+
+        if (!AVATAR_COLORS.includes(avatarColor)) {
+            return res.status(400).json({
+                message: 'Invalid avatar color.',
+            });
+        }
+
+        const user = await prisma.user.update({
+            where: {
+                id: req.user.id,
+            },
+            data: {
+                avatarColor,
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                avatarColor: true,
+            },
+        });
+
+        try {
+            await broadcastAvatarUpdate(user.id, user.avatarColor);
+        } catch (error) {
+            console.error('Failed to broadcast avatar update:', error);
+        }
+
+        return res.status(200).json({
+            message: 'Avatar color updated successfully.',
+            user,
         });
     } catch (error) {
         next(error);

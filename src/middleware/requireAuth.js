@@ -16,6 +16,7 @@ export default function requireAuth(req, res, next) {
             id: decoded.id,
             name: decoded.name,
             email: decoded.email,
+            avatarColor: decoded.avatarColor ?? null,
         };
 
         next();

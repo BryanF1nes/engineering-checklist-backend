@@ -1,4 +1,5 @@
 import { randomBytes, createHash } from "node:crypto";
+import { getIO } from "../socket.js";
 import prisma from "../config/prisma.js";
 
 const validRoles = [
@@ -245,6 +246,17 @@ export async function acceptInvitation(req, res, next) {
             return res.status(result.status).json({
                 message: result.error,
             });
+        }
+
+        try {
+            getIO()
+                .to(`project:${result.project.id}`)
+                .emit('project:member-joined', {
+                    projectId: result.project.id,
+                    userId: req.user.id,
+                });
+        } catch (error) {
+            console.error('Failed to broadcast member joined event:', error)
         }
 
         return res.status(201).json({

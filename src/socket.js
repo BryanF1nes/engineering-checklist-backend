@@ -111,6 +111,33 @@ export function initializeSocket(server) {
     return io;
 }
 
+export async function broadcastAvatarUpdate(userId, avatarColor) {
+    const projects = await prisma.project.findMany({
+        where: {
+            OR: [
+                { ownerId: userId },
+                {
+                    members: {
+                        some: {
+                            userId,
+                        },
+                    },
+                },
+            ],
+        },
+        select: {
+            id: true,
+        },
+    });
+
+    for (const project of projects) {
+        getIO().to(`project:${project.id}`).emit('user:avatar-updated', {
+            userId,
+            avatarColor,
+        });
+    }
+}
+
 export function getIO() {
     if (!io) {
         throw new Error('Socket.IO has not been initialized.');

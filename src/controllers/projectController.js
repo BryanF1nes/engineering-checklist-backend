@@ -89,6 +89,7 @@ export async function getProject(req, res, next) {
                     select: {
                         id: true,
                         name: true,
+                        avatarColor: true,
                     },
                 },
                 members: {
@@ -97,6 +98,7 @@ export async function getProject(req, res, next) {
                             select: {
                                 id: true,
                                 name: true,
+                                avatarColor: true,
                             },
                         },
                     },

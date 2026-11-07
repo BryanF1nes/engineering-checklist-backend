@@ -1,11 +1,14 @@
 import { Router } from 'express';
+import requireAuth from '../middleware/requireAuth.js';
+
 import {
     register,
     login,
     refresh,
     logout,
+    getCurrentUser,
+    updateAvatarColor,
 } from '../controllers/authController.js';
-import requireAuth from '../middleware/requireAuth.js';
 
 const router = Router();
 
@@ -14,10 +17,7 @@ router.post('/login', login);
 router.post('/logout', logout);
 router.post('/refresh', refresh);
 
-router.get('/me', requireAuth, (req, res) => {
-    return res.status(200).json({
-        user: req.user,
-    });
-});
+router.patch('/me/avatar-color', requireAuth, updateAvatarColor);
+router.get('/me', requireAuth, getCurrentUser);
 
 export default router;

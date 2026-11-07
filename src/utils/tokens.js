@@ -7,6 +7,7 @@ export function generateAccessToken(user) {
             id: user.id,
             name: user.name,
             email: user.email,
+            avatarColor: user.avatarColor ?? null,
         },
         process.env.JWT_ACCESS_SECRET,
         { expiresIn: '15m' }
