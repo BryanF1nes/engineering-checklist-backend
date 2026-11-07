@@ -305,14 +305,16 @@ export async function updateProject(req, res, next) {
 
 export async function deleteProject(req, res, next) {
     try {
+        const projectId = req.project.id;
+
         await prisma.project.delete({
             where: {
-                id: req.project.id,
+                id: projectId,
             },
         });
 
-        getIO().to(`project:${project.id}`).emit(`project:deleted`, {
-            projectId: project.id,
+        getIO().to(`project:${projectId}`).emit(`project:deleted`, {
+            projectId: projectId,
         });
 
         return res.status(200).json({
