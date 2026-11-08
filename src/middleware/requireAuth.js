@@ -14,7 +14,8 @@ export default function requireAuth(req, res, next) {
 
         req.user = {
             id: decoded.id,
-            name: decoded.name,
+            firstName: decoded.firstName,
+            lastName: decoded.lastName,
             email: decoded.email,
             avatarColor: decoded.avatarColor ?? null,
         };

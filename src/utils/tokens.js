@@ -5,7 +5,8 @@ export function generateAccessToken(user) {
     return jwt.sign(
         {
             id: user.id,
-            name: user.name,
+            firstName: user.firstName,
+            lastName: user.lastName,
             email: user.email,
             avatarColor: user.avatarColor ?? null,
         },

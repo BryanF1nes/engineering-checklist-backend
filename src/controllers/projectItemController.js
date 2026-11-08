@@ -16,13 +16,15 @@ export async function getProjectItems(req, res, next) {
                 assignee: {
                     select: {
                         id: true,
-                        name: true,
+                        firstName: true,
+                        lastName: true,
                     },
                 },
                 completedBy: {
                     select: {
                         id: true,
-                        name: true,
+                        firstName: true,
+                        lastName: true,
                     },
                 },
             },
@@ -60,13 +62,15 @@ export async function getProjectItem(req, res, next) {
                 assignee: {
                     select: {
                         id: true,
-                        name: true,
+                        firstName: true,
+                        lastName: true,
                     },
                 },
                 completedBy: {
                     select: {
                         id: true,
-                        name: true,
+                        firstName: true,
+                        lastName: true,
                     },
                 },
                 project: {
@@ -302,13 +306,15 @@ export async function updateProjectItem(req, res, next) {
                 assignee: {
                     select: {
                         id: true,
-                        name: true,
+                        firstName: true,
+                        lastName: true,
                     },
                 },
                 completedBy: {
                     select: {
                         id: true,
-                        name: true,
+                        firstName: true,
+                        lastName: true,
                     },
                 },
             },

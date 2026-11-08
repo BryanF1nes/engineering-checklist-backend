@@ -54,7 +54,8 @@ export async function login(req, res, next) {
 
         const safeUser = {
             id: user.id,
-            name: user.name,
+            firstName: user.firstName,
+            lastName: user.lastName,
             email: user.email,
             avatarColor: user.avatarColor,
         };
@@ -159,7 +160,8 @@ export async function refresh(req, res, next) {
 
         const safeUser = {
             id: storedToken.user.id,
-            name: storedToken.user.name,
+            firstName: storedToken.user.firstName,
+            lastName: storedToken.user.lastName,
             email: storedToken.user.email,
             avatarColor: storedToken.user.avatarColor,
         };
@@ -198,11 +200,19 @@ export async function logout(req, res, next) {
 
 export async function register(req, res, next) {
     try {
-        const { name, email, password } = req.body;
+        const { firstName, lastName, email, password } = req.body;
 
-        if (!name || !email || !password) {
+        if (
+            typeof firstName !== 'string' ||
+            !firstName.trim() ||
+            (lastName !== undefined && lastName !== null && typeof lastName !== 'string') ||
+            typeof email !== 'string' ||
+            !email.trim() ||
+            typeof password !== 'string' ||
+            !password
+        ) {
             return res.status(400).json({
-                message: 'All fields are required.'
+                message: 'First name, email, and password are required.'
             });
         }
 
@@ -227,14 +237,16 @@ export async function register(req, res, next) {
 
         const user = await prisma.user.create({
             data: {
-                name: name.trim(),
+                firstName: firstName.trim(),
+                lastName: lastName?.trim() || null,
                 email: normalizedEmail,
                 password: passwordHash,
                 avatarColor: getRandomAvatarColor(),
             },
             select: {
                 id: true,
-                name: true,
+                firstName: true,
+                lastName: true,
                 email: true,
                 avatarColor: true,
                 createdAt: true,
@@ -257,7 +269,8 @@ export async function getCurrentUser(req, res, next) {
             },
             select: {
                 id: true,
-                name: true,
+                firstName: true,
+                lastName: true,
                 email: true,
                 avatarColor: true,
             },
@@ -295,7 +308,8 @@ export async function updateAvatarColor(req, res, next) {
             },
             select: {
                 id: true,
-                name: true,
+                firstName: true,
+                lastName: true,
                 email: true,
                 avatarColor: true,
             },

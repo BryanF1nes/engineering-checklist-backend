@@ -23,8 +23,10 @@ export function initializeSocket(server) {
 
             socket.data.user = {
                 id: decoded.id,
-                name: decoded.name,
+                firstName: decoded.firstName,
+                lastName: decoded.lastName,
                 email: decoded.email,
+                avatarColor: decoded.avatarColor ?? null,
             };
 
             next();
