@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/server.js",
+    "start:prod-db": "node --env-file=.env src/server.js",
     "dev": "nodemon --exec \"node --env-file=.env.dev\" src/server.js",
 
     "db:generate": "prisma generate",
