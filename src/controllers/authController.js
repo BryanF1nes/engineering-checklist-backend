@@ -3,7 +3,6 @@ import bcrypt from "bcrypt";
 import prisma from "../config/prisma.js";
 
 import { broadcastAvatarUpdate } from "../socket.js";
-import { getRandomAvatarColor } from "../utils/avatarColors.js";
 import { AVATAR_COLORS } from "../utils/avatarColors.js";
 import {
     generateAccessToken,
@@ -200,7 +199,7 @@ export async function logout(req, res, next) {
 
 export async function register(req, res, next) {
     try {
-        const { firstName, lastName, email, password } = req.body;
+        const { firstName, lastName, email, password, avatarColor } = req.body;
 
         if (
             typeof firstName !== 'string' ||
@@ -222,6 +221,13 @@ export async function register(req, res, next) {
             });
         }
 
+        if (!AVATAR_COLORS.includes(avatarColor)) {
+            return res.status(400).json({
+                message: 'Invalid avatar color.',
+            })
+        }
+
+
         const normalizedEmail = email.trim().toLowerCase();
         const existingUser = await prisma.user.findUnique({
             where: { email: normalizedEmail },
@@ -241,7 +247,7 @@ export async function register(req, res, next) {
                 lastName: lastName?.trim() || null,
                 email: normalizedEmail,
                 password: passwordHash,
-                avatarColor: getRandomAvatarColor(),
+                avatarColor: avatarColor,
             },
             select: {
                 id: true,
