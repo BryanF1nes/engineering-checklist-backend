@@ -12,7 +12,7 @@
     "db:generate:dev": "node --env-file=.env.dev ./node_modules/prisma/build/index.js generate",
 
     "db:migrate": "node --env-file=.env.dev ./node_modules/prisma/build/index.js migrate dev",
-    "db:migrate:deploy": "node --env-file=.env ./node_modules/prisma/build/index.js migrate deploy",
+    "db:migrate:deploy": "prisma migrate deploy",
 
     "db:studio": "node --env-file=.env.dev ./node_modules/prisma/build/index.js studio",
     "db:studio:prod": "node --env-file=.env ./node_modules/prisma/build/index.js studio"
