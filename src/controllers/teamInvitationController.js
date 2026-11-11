@@ -77,7 +77,16 @@ export async function createTeamInvitation(req, res, next) {
         });
 
         // Set FRONTEND_URL to the actual deployed application URL.
-        const inviteUrl = new URL(process.env.FRONTEND_URL);
+        let inviteUrl;
+
+        try {
+            inviteUrl = new URL(process.env.FRONTEND_URL);
+        } catch {
+            return res.status(500).json({
+                message: "The frontend URL is not configured correctly.",
+            })
+        }
+
         inviteUrl.searchParams.set("teamInvite", token);
 
         return res.status(201).json({

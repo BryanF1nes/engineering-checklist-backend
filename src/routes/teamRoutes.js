@@ -12,6 +12,7 @@ import {
 
 import requireAuth from "../middleware/requireAuth.js";
 import requireTeamMember from "../middleware/requireTeamMember.js";
+import requireTeamRole from "../middleware/requireTeamRole.js";
 
 import {
     createTeam,

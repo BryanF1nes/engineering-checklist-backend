@@ -316,8 +316,11 @@ export async function removeTeamMember(req, res, next) {
                 where: {
                     projectId: { in: projectIds },
                     assignedTo: target.userId,
+                    status: "ONGOING",
                 },
-                data: { assignedTo: null },
+                data: {
+                    assignedTo: null,
+                },
             });
 
             // Remove project lead references.
