@@ -17,61 +17,173 @@ model User {
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
+    // Project relationships
     ownedProjects  Project[]       @relation("ProjectOwner")
+    ledProjects    Project[]       @relation("ProjectLead")
     memberships    ProjectMember[]
     assignedTasks  ChecklistItem[] @relation("TaskAssignee")
     completedTasks ChecklistItem[] @relation("TaskCompletedBy")
-    createdInvites ProjectInvite[]
     checklistItems ChecklistItem[]
 
+    // Invitation relationships
+    createdInvites     ProjectInvite[]
+    createdTeamInvites TeamInvite[]    @relation("TeamInviteCreator")
+
+    // Team relationships
+    teamMembers TeamMember[]
+
+    // Authentication
     refreshTokens RefreshToken[]
 }
 
 model Project {
-    id          Int           @id @default(autoincrement())
-    name        String
-    description String?
-    projectCode String?
-    ownerId     Int
-    status      ProjectStatus @default(ONGOING)
-    stage       ProjectStage  @default(TEN)
-    createdAt   DateTime      @default(now())
-    updatedAt   DateTime      @updatedAt
-    finishedAt  DateTime?
+    id            Int     @id @default(autoincrement())
+    name          String
+    description   String?
+    projectCode   String?
+    ownerId       Int?
+    projectLeadId Int?
 
-    owner User @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+    status     ProjectStatus @default(ONGOING)
+    stage      ProjectStage  @default(TEN)
+    createdAt  DateTime      @default(now())
+    updatedAt  DateTime      @updatedAt
+    finishedAt DateTime?
 
+    // Creator/reference, not organizational ownership
+    owner User? @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+    // Project-specific lead
+    projectLead User? @relation("ProjectLead", fields: [projectLeadId], references: [id], onDelete: SetNull)
+
+    // Legacy relationships (remove after migration)
     members     ProjectMember[]
-    items       ChecklistItem[]
     invitations ProjectInvite[]
 
+    // Team workspace
+    teamId String?
+    team   Team?   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+    // Folder organization
+    projectFolderId String?
+    projectFolder   ProjectFolder? @relation(fields: [projectFolderId], references: [id], onDelete: SetNull)
+
+    // Checklist
+    items ChecklistItem[]
+
     @@index([ownerId])
+    @@index([projectLeadId])
+    @@index([teamId, status])
+    @@index([projectFolderId])
 }
 
 model ChecklistItem {
-    id                Int        @id @default(autoincrement())
+    id                Int          @id @default(autoincrement())
     title             String
-    status            ItemStatus @default(ONGOING)
+    status            ItemStatus   @default(ONGOING)
+    priority          TaskPriority @default(MEDIUM)
     dueDate           DateTime?
-    projectId         Int
-    assignedTo        Int?
-    completedById     Int?
     estimatedDuration Int?
-    createdAt         DateTime   @default(now())
-    updatedAt         DateTime   @updatedAt
-    completedAt       DateTime?
 
-    project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-    assignee    User?   @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
-    completedBy User?   @relation("TaskCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
-    user        User?   @relation(fields: [userId], references: [id])
-    userId      Int?
+    projectId     Int
+    assignedTo    Int?
+    completedById Int?
+
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+    completedAt DateTime?
+
+    project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+    assignee User? @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+
+    completedBy User? @relation("TaskCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+
+    // Legacy relationship; remove if no longer used
+    userId Int?
+    user   User? @relation(fields: [userId], references: [id])
 
     @@index([projectId])
+    @@index([projectId, priority])
     @@index([assignedTo])
+    @@index([assignedTo, status])
     @@index([completedById])
 }
 
+model Team {
+    id   String @id @default(cuid())
+    name String
+    slug String @unique
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    members  TeamMember[]
+    projects Project[]
+    folders  ProjectFolder[]
+    invites  TeamInvite[]
+}
+
+model TeamMember {
+    id       String   @id @default(cuid())
+    teamId   String
+    userId   Int
+    role     TeamRole @default(CONTRIBUTOR)
+    joinedAt DateTime @default(now())
+
+    team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([teamId, userId])
+    @@index([userId])
+    @@index([teamId, role])
+}
+
+model TeamInvite {
+    id          String    @id @default(cuid())
+    teamId      String
+    tokenHash   String    @unique
+    email       String?
+    role        TeamRole  @default(CONTRIBUTOR)
+    createdById Int
+    expiresAt   DateTime
+    revokedAt   DateTime?
+    acceptedAt  DateTime?
+    createdAt   DateTime  @default(now())
+
+    team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+    createdBy User @relation("TeamInviteCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+    @@index([teamId])
+    @@index([teamId, expiresAt])
+    @@index([createdById])
+}
+
+model ProjectFolder {
+    id   String @id @default(cuid())
+    name String
+
+    teamId         String
+    parentFolderId String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+    parentFolder ProjectFolder?  @relation("FolderHierarchy", fields: [parentFolderId], references: [id], onDelete: SetNull)
+    subfolders   ProjectFolder[] @relation("FolderHierarchy")
+
+    projects Project[]
+
+    @@index([teamId])
+    @@index([parentFolderId])
+    @@index([teamId, parentFolderId])
+}
+
+// Legacy project-level membership.
+// Keep until existing project access is migrated to TeamMember.
 model ProjectMember {
     id        Int         @id @default(autoincrement())
     projectId Int
@@ -80,13 +192,14 @@ model ProjectMember {
     joinedAt  DateTime    @default(now())
 
     project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
     @@unique([projectId, userId])
     @@index([userId])
 }
 
+// Legacy project-level invitations.
+// Keep until existing invitations are migrated or expired.
 model ProjectInvite {
     id          Int         @id @default(autoincrement())
     projectId   Int
@@ -97,9 +210,8 @@ model ProjectInvite {
     revokedAt   DateTime?
     createdAt   DateTime    @default(now())
 
-    project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-    createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+    project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+    createdBy User    @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
     @@index([projectId])
 }
@@ -118,6 +230,14 @@ model RefreshToken {
     @@index([userId])
     @@index([familyId])
     @@index([expiresAt])
+}
+
+enum TeamRole {
+    ADMIN
+    PROJECT_MANAGER
+    PROJECT_LEAD
+    CONTRIBUTOR
+    VIEWER
 }
 
 enum ProjectRole {
@@ -143,4 +263,10 @@ enum ProjectStatus {
     ONGOING
     UNDER_REVIEW
     COMPLETED
+}
+
+enum TaskPriority {
+    LOW
+    MEDIUM
+    HIGH
 }
