@@ -6,6 +6,8 @@ import authRoutes from "./routes/authRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import itemRoutes from "./routes/itemRoutes.js";
 import invitationRoutes from "./routes/invitationRoutes.js";
+import teamRoutes from "./routes/teamRoutes.js";
+
 import errorHandler from "./middleware/error.middleware.js";
 
 const app = express();
@@ -30,6 +32,7 @@ app.use("/auth", authRoutes);
 app.use("/project", projectRoutes);
 app.use("/project/:projectId/items", itemRoutes);
 app.use("/invitations", invitationRoutes);
+app.use("/teams", teamRoutes);
 
 // Error handling
 app.use(errorHandler);
